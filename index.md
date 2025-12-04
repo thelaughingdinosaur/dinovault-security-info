@@ -1,136 +1,165 @@
-# 🛡️ DinoMind Security: Your Trust, Secured
+# DinoMind Security Overview
 
-Welcome to the **DinoMind security and transparency page**.  
-We believe that when it comes to your most sensitive data, trust isn't given — it's **earned through transparency** and a relentless commitment to security.  
-This document explains in clear terms how **DinoVault** is engineered to protect your digital life.
+## Transparency, Trust, and Zero-Knowledge Protection
 
----
-
-## 🔐 Zero-Knowledge Security
-
-Our core principle is **Zero-Knowledge Security**.  
-This means we, the developers of DinoMind, can **never see, access, or decrypt your stored information**.  
-Your data is **yours and yours alone**.
+DinoMind is built on a simple philosophy: your data belongs to you—only you. Our responsibility is to protect it using open, transparent, and industry-standard security practices. Whether you choose to keep your data offline on your device or enable Cloud Sync to access it across multiple devices, the foundations of DinoVault remain the same: strong encryption, strict zero-knowledge architecture, and complete user control.
 
 ---
 
-## 🔑 The Heart of DinoVault: Your Master Password
+# 1. Zero-Knowledge Security
 
-Your **Master Password** is the single most important piece of information for your vault.  
-It is the **one and only key** to your data.
+Zero-Knowledge means that DinoMind has no access to your decrypted Vault data or your master password. All encryption and decryption happen exclusively on your device.
 
-- **It's Never Stored, Never Sent:**  
-  We do **not store your Master Password** on your device or our servers.  
-  It exists **only in your memory**.  
-  This means we can never access it, and we also **cannot recover it** for you if you forget it.  
-  This is a **critical security feature** that guarantees **only you** can open your vault.
+### Local Storage
 
-- **How We Verify Your Password Without Storing It (Hashing):**  
-  When you create your Master Password, we don't save the password itself.  
-  Instead, we use a **one-way cryptographic function** called **PBKDF2-SHA256** to create a unique, irreversible **"hash" or fingerprint** of your password.  
-  This hash is **stored on your device**.  
-  When you log in, we hash the password you enter and compare it to the stored hash.  
-  If they match, the vault unlocks.  
-  ✅ This process allows us to **verify you are the correct user** without ever needing to see or store your actual password.
+* Vault data never leaves your device.
+* No cloud connection is used for storage or syncing.
 
-- **Deriving Your Encryption Key (PBKDF2):**  
-  This same secure process is used to **generate your vault's unique encryption key**.  
-  Your Master Password is combined with a **unique, randomly generated value** called a **salt** (stored on your device) and put through the strong **PBKDF2 algorithm**.  
-  This transforms your password into a powerful **256-bit encryption key** that is used to **lock and unlock your data**.
+### Cloud Sync
+
+* All Vault data is encrypted locally on your device before syncing.
+* Firebase stores only encrypted text—never readable information.
+* Even in a server breach scenario, attackers would only see unusable encrypted data.
+
+DinoMind cannot decrypt your data, reset your password, or retrieve your master password. The encryption key is derived from your password and never transmitted to our servers.
 
 ---
 
-## 🧠 The Encryption Engine: XChaCha20-Poly1305
+# 2. The Master Password
 
-Once your unique encryption key is derived, DinoVault uses it to **lock down your data**.  
-Every single piece of sensitive information — every password, card number, PIN, and custom field — is **encrypted individually** on your device **before it's ever saved**.
+Your master password is the single key that unlocks your vault.
 
-DinoVault uses the **XChaCha20-Poly1305** authenticated encryption cipher.  
-While the name is complex, its benefits are simple and powerful:
+### Key Principles
 
-- **Modern and Secure:**  
-  It is a **state-of-the-art encryption algorithm** recommended by leading security experts (including Google) for its **high performance** and **robust security** against a wide range of cryptographic attacks.
+* It is never stored in plaintext.
+* It is never transmitted over the network.
+* It is impossible for us to recover if forgotten.
 
-- **Authenticated Encryption:**  
-  It doesn't just encrypt your data; it also **authenticates** it.  
-  This means it protects against attempts to **tamper with or modify your encrypted data** without your knowledge.
+### Secure Verification
 
-🔐 Because of this **on-device encryption**, the data stored in the DinoMind database is **completely unreadable** to anyone or any app **without your Master Password**.
+To enable multi-device access, DinoMind uses a one-way verification method:
 
----
+1. Your master password is processed locally through PBKDF2-SHA256.
+2. A unique, randomly generated salt ensures every user has a distinct hash.
+3. The result is a non-reversible hash used only for verifying future login attempts.
+4. Only the salt and hash are stored in Firebase for cross-device verification.
+5. The actual password is never exposed or stored.
 
-## 🧩 Smart In-Memory Protection
+### Key Derivation
 
-Security doesn't stop once data is stored.  
-How an app **handles information while you're using it** is just as important.
-
-- **The Vault Session Manager:**  
-  When you unlock DinoVault, your encryption key is held **temporarily and securely in your device's memory** by our `VaultSessionManager`.  
-  This allows you to access your items without re-entering your password every time.
-
-- **Automatic Lock & Memory Wipe:**  
-  This session is **not permanent**.  
-  The `VaultSessionManager` is designed to **automatically lock** the vault and **securely wipe** the encryption key from memory after a period of inactivity (**5 minutes**).  
-  This ensures that if you forget to close the app, your data is automatically protected.
-
-- **Secure Caching:**  
-  To provide a smooth experience, decrypted passwords and cards are held in a **temporary in-memory cache**:
-  - `DecryptedPasswordCache`
-  - `DecryptedCardsCache`  
-  This cache is **immediately and securely cleared** the moment your vault session ends, ensuring **no decrypted data is left behind**.
-
-- **Explicit Memory Cleaning:**  
-  Throughout the code, we **proactively "zero out" or wipe sensitive information** (like passwords and encryption keys) from memory as soon as it is no longer needed, **minimizing exposure time**.
+Your encryption key is created by combining your password with the stored salt using PBKDF2-SHA256 (100,000 iterations).
+The result is a strong 256-bit key used to encrypt and decrypt vault data entirely on your device.
 
 ---
 
-## 📱 Platform and Application Security Features
+# 3. DinoVault Architecture
 
-DinoVault includes several features you can see and interact with, all designed to add **layers of protection**:
+DinoVault is divided into two layers:
 
-- **Screenshot & Screen Recording Prevention:**  
-  On all sensitive screens within DinoVault, we enable Android’s `FLAG_SECURE`.  
-  This system-level feature blocks anyone (including you and other apps) from taking screenshots or recording the screen.
+### 1. Encrypted Zone (Passwords and Cards)
 
-- **Secure Clipboard:**  
-  When you copy a password or card number, our `ClipboardUtils` feature **automatically clears** that information from your device’s clipboard after **60 seconds**.  
-  This prevents sensitive data from being accidentally pasted into the wrong place.
+* All sensitive fields are encrypted using XChaCha20-Poly1305.
+* Encryption occurs before any data is saved, synced, or transmitted.
+* Firebase stores only ciphertext that cannot be reversed without your key.
 
-- **Brute-Force Protection:**  
-  To prevent attackers from guessing your password, the `LockoutTimerManager` **tracks failed login attempts**.  
-  After **10 incorrect tries**, the vault will lock for an **exponentially increasing amount of time**.
+### 2. Protected Zone (General App Data)
 
-- **Secure Data Export & Import:**  
-  The **"Export Vault"** feature is also designed with security as the top priority.  
-  Your data is:
-  1. First **decrypted in memory**
-  2. Then **re-encrypted** with your Master Password using the **same powerful XChaCha20-Poly1305 cipher**
-  3. Then saved to a file  
-  ✅ This ensures your backup file is **just as secure** as your vault itself.
+Non-sensitive app features (Ideas, Links, Activities, etc.) are securely stored using Google Firebase Firestore.
+
+* Encrypted transit (HTTPS/TLS) for all network operations.
+* Strict Firebase Security Rules ensure only authenticated users can access their data.
+* This data does not include any sensitive vault information.
 
 ---
 
-## 🤝 Our Security Promise
+# 4. Encryption Technology
 
-To build your trust, we make these commitments:
+DinoVault uses XChaCha20-Poly1305, a modern authenticated encryption cipher recommended by security experts for mobile applications.
 
-### ✅ We DO:
-- Encrypt **every piece** of your sensitive data on your device.
-- Use **modern, peer-reviewed**, and **industry-standard** cryptographic algorithms.
-- Give **you, and only you**, control over your data.
+### Why XChaCha20-Poly1305
 
-### ❌ We DO NOT:
-- Store or transmit your **Master Password**.
-- Store or transmit your **unencrypted vault data**.
-- Sell or share **any of your personal information**.
+* High resistance to cryptographic attacks.
+* High performance on mobile hardware.
+* Built-in authentication ensures data integrity and prevents tampering.
+
+If encrypted vault data is ever corrupted or modified, DinoMind detects the tampering and rejects it automatically.
 
 ---
 
-## 🧬 Final Word
+# 5. In-Memory Security
 
-Your **privacy and security** are the foundation of **DinoMind**.  
-We are dedicated to protecting your digital life.
+How data is handled in RAM is as important as how it is stored.
 
-If you have any further questions, please don’t hesitate to contact us at:
+### Vault Session Manager
 
-📧 <thelaughingdinosaurhere@gmail.com>
+* When unlocked, the encryption key is held only in RAM.
+* It is removed after a period of inactivity (default: 10 minutes).
+
+### Explicit Memory Cleaning
+
+Wherever possible, DinoMind clears sensitive data from memory immediately after use.
+This includes wiping derived keys and clearing password character arrays from RAM.
+
+---
+
+# 6. Device-Level Protections
+
+Several platform features add additional layers of security.
+
+### Screenshot and Screen Recording Protection
+
+Sensitive vault screens enforce Android’s FLAG_SECURE to prevent screenshots, screen recordings, or third-party capture.
+
+### Secure Clipboard
+
+Copied passwords and card details automatically clear from the clipboard after 60 seconds.
+
+### Brute-Force Protection
+
+Failed login attempts are tracked. After multiple incorrect attempts, a lockout timer activates with increasing delay periods to protect against guessing attacks.
+
+---
+
+# 7. Secure Backup, Export, and Import
+
+When exporting your vault:
+
+1. Data is decrypted locally in memory.
+2. It is re-encrypted using XChaCha20-Poly1305 with:
+
+   * A fresh random salt
+   * A fresh random nonce
+   * PBKDF2-derived key
+3. The encrypted backup file contains no readable information.
+
+DinoMind cannot decrypt or access your export files. Only your master password can.
+
+---
+
+# 8. Our Commitment
+
+DinoMind is built on trust, transparency, and industry-standard security.
+To uphold that:
+
+### We Do
+
+* Encrypt all sensitive data before storage or transmission.
+* Use proven, peer-reviewed encryption algorithms.
+* Keep all encryption keys in the user’s control.
+* Ensure no plaintext vault data touches our servers.
+
+### We Do Not
+
+* Store or transmit your master password.
+* Store unencrypted vault data.
+* Sell, share, or analyze personal vault information.
+* Access, reset, or recover your vault.
+
+---
+
+# Conclusion
+
+Your privacy is the foundation of DinoMind. Whether your vault stays offline on your device or syncs across multiple devices, the system is designed with the same uncompromising principles: zero-knowledge encryption, modern cryptographic standards, and complete user control.
+
+For questions, feedback, or security inquiries, contact:
+[thelaughingdinosaurhere@gmail.com](mailto:thelaughingdinosaurhere@gmail.com)
